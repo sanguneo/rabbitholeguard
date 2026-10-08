@@ -1,7 +1,7 @@
 # 🕳️ rabbitholeguard
 
 > **AI 코딩 에이전트의 목표 이탈·무한 루프·과잉 검증을 막고 원래 작업으로 복귀시키는 표준 스킬**  
-> *A lightweight goal-drift safeguard & recovery skill for AI coding agents (OmO, Claude Code, Codex, OpenCode).*
+> *A goal-recovery skill with an optional execution guard for OmO / Senpi.*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Standard: Skills](https://img.shields.io/badge/Standard-.agents%2Fskills-green.svg)](SKILL.md)
@@ -37,7 +37,7 @@ https://github.com/sanguneo/rabbitholeguard 저장소의 SKILL.md를 읽고 rabb
 ```
 
 에이전트가 알아서 사용자 홈의 전역 스킬 경로(`~/.agents/skills/rabbitholeguard/SKILL.md`)에 설치하고 완료를 보고합니다.  
-설치 후 **새 세션**을 열면 자동으로 인식됩니다.
+설치 후 **새 세션**에서 스킬 목록을 확인하세요. 스킬의 자동 선택과 준수는 모델 동작에 달려 있습니다.
 
 ### 2. 제거 요청
 ```text
@@ -65,8 +65,8 @@ rabbitholeguard 스킬 제거해줘.
 
 ## 🚀 사용 방법
 
-### 자동 활성화
-에이전트가 다음 상황을 감지하면 스킬 설명에 따라 자동으로 이 지침을 참고합니다:
+### 스킬 선택 조건
+다음 상황을 스킬 설명의 선택 조건으로 제공합니다. 항상 자동 호출되는 것은 아닙니다:
 - 사용자가 *"삼천포로 빠지지 마"*, *"원래 시킨 일 해"*, *"왜 같은 걸 계속 반복해?"* 라고 지적할 때
 - 동일 명령이나 테스트가 변경 없이 반복될 때
 - 맥락 압축 후 방향을 잃었을 때
@@ -78,6 +78,50 @@ rabbitholeguard로 원래 목표와 남은 완료 조건 확인하고 바로 복
 ```
 
 ---
+
+## 선택 사항: 실행 전 차단 훅 (OmO / Senpi)
+
+**스킬 단독 설치가 기본입니다.** 훅은 별도 요청으로 설치하며 설치 후에도 매 세션 기본 OFF입니다. Claude Code·Codex·OpenCode의 훅 어댑터는 포함하지 않습니다.
+
+에이전트에게 설치를 맡기세요:
+
+```text
+rabbitholeguard의 OmO 선택형 차단 훅도 설치해줘. 스킬은 유지해줘.
+```
+
+설치하는 에이전트는 이 저장소의 `extensions/rabbitholeguard/index.ts`를 현재 OmO가 사용하는 에이전트 설정 디렉터리의 `extensions/rabbitholeguard/index.ts`에 설치합니다. 설정 디렉터리는 OmO의 `getAgentDir()` 또는 실제 실행 설정으로 확인해야 합니다. Senpi 기본 경로는 `~/.senpi/agent`이지만 OmO 설정에 따라 달라질 수 있으므로 고정 경로를 추측하지 않습니다. 기존 파일이 다르면 사용자 수정 여부를 확인합니다. 다른 확장·설정은 변경하지 않습니다.
+
+새 세션 또는 `/reload` 후, **사용자가** 다음 명령으로 선택합니다. 일반 대화로 켜 달라고 하는 것만으로 켜지지 않으며 모델용 제어 도구는 등록하지 않습니다.
+
+```text
+/rabbitholeguard watch bun test
+/rabbitholeguard status
+/rabbitholeguard off
+```
+
+`watch` 뒤에는 감시할 **정확한 bash 명령**을 넣습니다. `bun test`와 `bun test tests/auth.test.ts`는 다른 명령입니다.
+
+| 명령 | 동작 |
+|---|---|
+| `/rabbitholeguard watch <명령>` | 해당 명령을 감시 대상으로 등록하고 ON |
+| `/rabbitholeguard on` / `off` | 차단 활성화 / 해제 |
+| `/rabbitholeguard status` | 현재 상태 확인 |
+| `/rabbitholeguard reset` | 반복 기록 초기화 |
+| `/rabbitholeguard allow-once` | 다음 차단 대상 호출 한 번 허용 |
+
+감시 명령이 변경 없이 두 번 완료되면 실제 결과에 경고를 덧붙이고, 다음 동일 실행을 `tool_call`에서 거부합니다. 실행 결과를 조작해 성공으로 바꾸지는 않습니다. 관측된 수정이나 환경 변경 가능성이 있는 다른 셸 실행, 새 사용자 요청이 있으면 반복 기록을 무효화합니다.
+
+**확인 가능한 범위:** 확장 이벤트에 직접 나타나는 도구 호출만 다룹니다. `eval` 안의 중첩 실행, 외부 프로세스의 파일 변경, 다른 세션, 백그라운드 실행의 최종 결과를 완전히 추적하지 않습니다. 명령 글자를 바꾸면 동일 실행으로 보지 않으며 보안 격리 장치는 아닙니다. 목표 이탈 전체를 기계적으로 판정하는 대신, 사용자가 지정한 반복 검증의 낭비만 차단합니다.
+
+제거도 에이전트에게 맡길 수 있습니다:
+
+```text
+rabbitholeguard의 차단 훅만 제거해줘. 스킬은 남겨줘.
+```
+
+해당 확장 파일만 제거하고 빈 폴더만 정리합니다. 이미 실행 중인 세션에서는 `/rabbitholeguard off` 또는 `/reload`가 필요합니다.
+
+개발 검증: `bun test` (별도 패키지 설치 없이 Bun 필요).
 
 ## 🤖 에이전트 자가 설치 규격 (For Agents)
 
