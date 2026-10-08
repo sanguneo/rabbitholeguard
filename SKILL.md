@@ -20,9 +20,11 @@ description: "OmO 목표 복귀와 스킬 설치·제거. rabbitholeguard 설치
 
 ### 선택형 차단 훅 (OmO / Senpi만)
 
+- 상세 설치·제거 안내는 패키지의 `docs/optional-hook.md`에 있다. 설치본에 패키지 파일이 없으면 사용자가 제공한 원본 또는 공개 저장소 `https://github.com/sanguneo/rabbitholeguard`에서 문서와 확장 파일을 읽는다.
 - 스킬 설치 요청만으로 훅을 설치하거나 활성화하지 않는다.
 - 사용자가 차단 훅 설치를 요청하면 패키지의 `README.md`와 `extensions/rabbitholeguard/index.ts`를 읽고, 실제 OmO 에이전트 설정 디렉터리의 `extensions/rabbitholeguard/index.ts`에 설치한다. `getAgentDir()` 또는 실행 설정으로 경로를 확인하고 특정 홈 경로를 추측하지 않는다. 다른 내용의 설치본은 확인 없이 덮어쓰지 않는다.
 - 새 세션 또는 `/reload`에서 로드하며 기본 OFF다. 사용자가 `/rabbitholeguard watch <정확한 bash 검증 명령>`으로 대상과 활성화를 선택한다. `/rabbitholeguard off`, `status`, `reset`, `allow-once`로 해제·확인·초기화·이번만 허용할 수 있다. 에이전트가 사용자를 대신해 제어 명령을 호출하거나 우회하지 않는다.
+- 세션 전환·재로드 시 사용자가 watch로 추가한 명령은 초기화된다. `on`만으로 명령을 자동 등록하지 않는다. 성공·실패한 완료 실행을 모두 세며 두 번째에 경고, 세 번째 실행 전에 차단한다.
 - 훅은 직접 관측한 반복 검증만 차단한다. eval 내부·외부 변경·백그라운드 완료·다른 세션까지 감시한다고 보고하지 않는다.
 - 훅만 제거하라는 요청에서는 해당 확장 파일과 빈 폴더만 제거하고 스킬은 유지한다. 스킬만 제거하라는 요청에서는 별도로 설치한 훅을 임의로 제거하지 않는다. 전체 제거 요청이면 두 설치본을 각각 확인하여 제거한다.
 
